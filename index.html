@@ -75,15 +75,99 @@ canvas {
   text-shadow: 1px 1px 0 #000;
 }
 
-#startScreen, #gameOverScreen {
+#passwordScreen, #startScreen, #gameOverScreen {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 30, 0.85);
+  background: rgba(10, 10, 30, 0.92);
   pointer-events: auto;
+  z-index: 30;
+}
+
+#passwordScreen h2 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: #80cbc4;
+  text-shadow: 2px 2px 0 #000;
+  margin-bottom: 6px;
+}
+
+#passwordScreen .pw-sub {
+  font-size: 11px;
+  color: #607d8b;
+  margin-bottom: 24px;
+}
+
+#pwInput {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  width: 160px;
+  padding: 10px 14px;
+  text-align: center;
+  background: #0d1b2a;
+  color: #2ecc71;
+  border: 2px solid #2ecc71;
+  border-radius: 4px;
+  outline: none;
+  letter-spacing: 6px;
+  caret-color: #2ecc71;
+}
+
+#pwInput::placeholder {
+  color: #2e4a3a;
+  letter-spacing: 2px;
+  font-size: 10px;
+}
+
+#pwInput.shake {
+  animation: pwShake 0.4s ease;
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+@keyframes pwShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+#pwError {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #e74c3c;
+  margin-top: 10px;
+  height: 14px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+#pwSubmit {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  padding: 10px 24px;
+  margin-top: 16px;
+  background: #2ecc71;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #1b8a4a;
+  transition: all 0.1s;
+}
+
+#pwSubmit:hover { transform: translateY(-1px); box-shadow: 0 4px 0 #1b8a4a; }
+#pwSubmit:active { transform: translateY(2px); box-shadow: 0 1px 0 #1b8a4a; }
+
+.pw-lock {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+#startScreen {
   z-index: 20;
 }
 
@@ -130,6 +214,10 @@ canvas {
 .startBtn:active {
   transform: translateY(2px);
   box-shadow: 0 2px 0 #1b8a4a;
+}
+
+#gameOverScreen {
+  z-index: 20;
 }
 
 #gameOverScreen h2 {
@@ -211,7 +299,17 @@ canvas {
     <div id="levelBadge"></div>
   </div>
 
-  <div id="startScreen">
+  <!-- ★ パスワード画面（最前面） -->
+  <div id="passwordScreen">
+    <div class="pw-lock">🔒</div>
+    <h2>PASSWORD</h2>
+    <div class="pw-sub">合言葉を入力してください</div>
+    <input type="password" id="pwInput" placeholder="****" maxlength="10" autocomplete="off">
+    <div id="pwError"></div>
+    <button id="pwSubmit">ENTER</button>
+  </div>
+
+  <div id="startScreen" style="display:none;">
     <h1>🍃 LEAF JUMP</h1>
     <div class="subtitle">- リーフジャンプ -</div>
     <button class="startBtn" id="btnStart">START</button>
@@ -235,14 +333,50 @@ canvas {
 
 <script>
 // ===================================================
-//  🍃 LEAF JUMP — Professional Edition v2
-//  コンボ = 上昇中に葉を踏んだ場合のみ
+//  🍃 LEAF JUMP — Professional Edition v3
+//  パスワード認証 + 上昇コンボシステム
+// ===================================================
+
+// ★★★ パスワード認証 ★★★
+const PASSWORD = 'nd60';
+let authenticated = false;
+
+const pwScreen  = document.getElementById('passwordScreen');
+const pwInput   = document.getElementById('pwInput');
+const pwError   = document.getElementById('pwError');
+const pwSubmit  = document.getElementById('pwSubmit');
+
+function tryAuth() {
+  if (pwInput.value === PASSWORD) {
+    authenticated = true;
+    pwScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+    pwInput.value = '';
+  } else {
+    pwError.textContent = 'WRONG PASSWORD';
+    pwInput.classList.add('shake');
+    pwInput.value = '';
+    setTimeout(() => {
+      pwInput.classList.remove('shake');
+      pwError.textContent = '';
+    }, 600);
+  }
+  pwInput.focus();
+}
+
+pwSubmit.addEventListener('click', tryAuth);
+pwInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryAuth();
+});
+
+// 起動時にフォーカス
+setTimeout(() => pwInput.focus(), 100);
+
 // ===================================================
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// --- Responsive scaling ---
 const BASE_W = 400;
 const BASE_H = 600;
 let scale = 1;
@@ -259,7 +393,6 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// --- DOM refs ---
 const scoreBoard = document.getElementById('scoreBoard');
 const comboDisplay = document.getElementById('comboDisplay');
 const levelBadge = document.getElementById('levelBadge');
@@ -270,7 +403,7 @@ const btnStart = document.getElementById('btnStart');
 const btnRetry = document.getElementById('btnRetry');
 
 // ===================================================
-//  Asset Loading (PNG with fallback)
+//  Asset Loading
 // ===================================================
 function loadImg(src) {
   return new Promise(resolve => {
@@ -286,7 +419,7 @@ async function loadAssets() {
   IMG.idle  = await loadImg('assets/char/idle.png');
   IMG.jump  = await loadImg('assets/char/jump.png');
   IMG.fall  = await loadImg('assets/char/fall.png');
-  IMG.combo = await loadImg('assets/char/combo.png');  // ★ 新規: コンボ専用スプライト
+  IMG.combo = await loadImg('assets/char/combo.png');
   IMG.leaf     = await loadImg('assets/leaf/fresh.png');
   IMG.leafDead = await loadImg('assets/leaf/dead.png');
   IMG.bg       = await loadImg('assets/bg/spring.png');
@@ -308,7 +441,7 @@ const GAME = {
   particles: [],
   popups: [],
   time: 0,
-  comboActive: false,  // ★ 現在コンボ状態か（上昇中に踏んだ直後～落下開始まで）
+  comboActive: false,
 };
 
 const PHYSICS = {
@@ -320,7 +453,6 @@ const PHYSICS = {
   maxVx: 5,
 };
 
-// --- Player ---
 const P = {
   x: BASE_W / 2 - 16,
   y: BASE_H / 2,
@@ -332,7 +464,6 @@ const P = {
   trail: [],
 };
 
-// --- Leaves ---
 let leaves = [];
 
 function spawnLeaf(forceY) {
@@ -472,17 +603,13 @@ function drawLeafFallback(x, y, w, h, alive, opacity) {
   ctx.globalAlpha = 1;
 }
 
-// ★ コンボ状態用フォールバックドット絵（虹色オーラ＋キラキラ目）
 function drawPlayerComboFallback(x, y, w, h) {
-  // 虹色に明滅するボディ
   const hue = (GAME.time * 0.3) % 360;
   ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
   ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
-  // キラキラ目
   ctx.fillStyle = '#fff';
   ctx.fillRect(x + 6, y + 8, 7, 7);
   ctx.fillRect(x + w - 13, y + 8, 7, 7);
-  // 星型瞳（十字で表現）
   ctx.fillStyle = '#ffe000';
   ctx.fillRect(x + 8, y + 10, 3, 3);
   ctx.fillRect(x + 7, y + 11, 5, 1);
@@ -490,10 +617,8 @@ function drawPlayerComboFallback(x, y, w, h) {
   ctx.fillRect(x + w - 12, y + 10, 3, 3);
   ctx.fillRect(x + w - 13, y + 11, 5, 1);
   ctx.fillRect(x + w - 11, y + 9, 1, 5);
-  // 大きく開いた口
   ctx.fillStyle = '#ff3366';
   ctx.fillRect(x + w/2 - 4, y + h - 12, 8, 6);
-  // 頬紅（強め）
   ctx.fillStyle = 'rgba(255,100,150,0.7)';
   ctx.fillRect(x + 2, y + 16, 5, 3);
   ctx.fillRect(x + w - 7, y + 16, 5, 3);
@@ -549,7 +674,6 @@ function drawLeaves() {
 function drawPlayer() {
   const isCombo = GAME.comboActive && GAME.combo >= 1;
 
-  // ★ Trail — コンボ中は虹色
   P.trail.forEach((t, i) => {
     const a = i / P.trail.length * 0.3;
     ctx.globalAlpha = a;
@@ -563,12 +687,10 @@ function drawPlayer() {
   });
   ctx.globalAlpha = 1;
 
-  // ★ Aura — コンボ中のみ表示、コンボ数で色変化
   if (isCombo) {
     P.auraAlpha = Math.min(P.auraAlpha + 0.06, 0.45);
-    const auraHue = GAME.combo >= 5 ? (GAME.time * 0.5) % 360 : // 5+: 虹色回転
-                    GAME.combo >= 3 ? 30 :  // 3-4: オレンジ
-                    200;                     // 1-2: シアン
+    const auraHue = GAME.combo >= 5 ? (GAME.time * 0.5) % 360 :
+                    GAME.combo >= 3 ? 30 : 200;
     const auraColor = GAME.combo >= 5
       ? `hsla(${auraHue}, 100%, 60%, ${P.auraAlpha})`
       : `hsla(${auraHue}, 80%, 55%, ${P.auraAlpha})`;
@@ -580,16 +702,14 @@ function drawPlayer() {
     P.auraAlpha = Math.max(P.auraAlpha - 0.05, 0);
   }
 
-  // Squash & stretch
   ctx.save();
   ctx.translate(P.x + P.w/2, P.y + P.h);
   ctx.scale(P.squash, P.stretch);
   ctx.translate(-P.w/2, -P.h);
 
-  // ★ スプライト選択: コンボ中 → combo.png 優先
   let img = null;
   if (isCombo && P.vy < 0) {
-    img = IMG.combo || IMG.jump;  // combo.pngがなければjump.pngにフォールバック
+    img = IMG.combo || IMG.jump;
   } else if (P.vy < -1) {
     img = IMG.jump || IMG.idle;
   } else if (P.vy > 2) {
@@ -750,7 +870,6 @@ function update(timestamp) {
 
   if (GAME.state === 'playing') {
 
-    // Movement
     if (input.left) P.vx -= PHYSICS.moveAccel;
     if (input.right) P.vx += PHYSICS.moveAccel;
     if (input.touchActive) {
@@ -758,26 +877,22 @@ function update(timestamp) {
       P.vx += Math.max(-PHYSICS.moveAccel, Math.min(PHYSICS.moveAccel, diff));
     }
 
-    // Physics
     P.vx *= PHYSICS.friction;
     P.vx = Math.max(-PHYSICS.maxVx, Math.min(PHYSICS.maxVx, P.vx));
     P.vy += PHYSICS.gravity;
     P.x += P.vx;
     P.y += P.vy;
 
-    // Wall wrap
     if (P.x + P.w < 0) P.x = BASE_W;
     if (P.x > BASE_W) P.x = -P.w;
 
-    // Squash & stretch lerp
     P.squash += (1 - P.squash) * 0.15;
     P.stretch += (1 - P.stretch) * 0.15;
 
-    // Trail
     P.trail.push({ x: P.x, y: P.y });
     if (P.trail.length > 6) P.trail.shift();
 
-    // ★★★ 核心: 葉っぱ衝突判定（上昇中・落下中ともに反応） ★★★
+    // --- Leaf collision ---
     for (let i = leaves.length - 1; i >= 0; i--) {
       const leaf = leaves[i];
       if (!leaf.alive) continue;
@@ -785,66 +900,52 @@ function update(timestamp) {
       const bob = Math.sin(GAME.time * 0.003 * leaf.bobSpeed + leaf.bobOffset) * leaf.bobAmp;
       const ly = leaf.y + bob;
 
-      // 判定: 上からでも下からでも、キャラの足元 or 頭が葉に重なっていればOK
-      // ただしコンボ判定は上昇中のみ
       const playerBottom = P.y + P.h;
       const playerTop = P.y;
-      const leafTop = ly;
       const leafBottom = ly + leaf.h;
 
-      // 水平方向の重なり
       const hOverlap = P.x + P.w > leaf.x + 4 && P.x < leaf.x + leaf.w - 4;
 
-      // 垂直方向: 足元が葉に触れている（落下中）または頭～体が葉に触れている（上昇中）
       let hit = false;
       if (hOverlap) {
         if (P.vy >= 0) {
-          // 落下中: 足元が葉の範囲内
-          hit = playerBottom >= leafTop && playerBottom <= leafBottom + 10;
+          hit = playerBottom >= ly && playerBottom <= leafBottom + 10;
         } else {
-          // ★ 上昇中: 体の上半分～足元が葉に重なっていればOK
-          hit = playerBottom >= leafTop && playerTop <= leafBottom + 4;
+          hit = playerBottom >= ly && playerTop <= leafBottom + 4;
         }
       }
 
       if (hit) {
-        const wasRising = P.vy < 0;  // ★ 踏んだ瞬間の状態を記録
+        const wasRising = P.vy < 0;
 
-        // ジャンプ発動
         P.vy = PHYSICS.leafJump;
         P.squash = 1.4;
         P.stretch = 0.6;
 
-        // 葉を消す
         leaf.alive = false;
         leaf.sinkTimer = 0;
         GAME.leafSteps++;
 
-        // 難易度上昇
         if (GAME.leafSteps % 30 === 0 && GAME.leafCount > 5) {
           GAME.leafCount--;
           GAME.difficulty++;
         }
 
-        // ★★★ コンボ判定: 上昇中に踏んだ場合のみ ★★★
         let points;
         if (wasRising) {
-          // 上昇中に踏んだ → コンボ加算！
           GAME.combo++;
           GAME.comboActive = true;
           if (GAME.combo > GAME.maxCombo) GAME.maxCombo = GAME.combo;
-          points = 100 * GAME.combo;  // コンボ時は高得点
+          points = 100 * GAME.combo;
 
           const pcolor = GAME.combo >= 5 ? '#ff5252' :
                          GAME.combo >= 3 ? '#ff9800' : '#00e5ff';
           emitParticles(leaf.x + leaf.w/2, ly, 12 + GAME.combo * 2, pcolor, 4 + GAME.combo * 0.5);
           showScorePopup(P.x, P.y - 15, `+${points} ★${GAME.combo}`, pcolor);
 
-          // コンボ中の画面揺れ（小さめ）
           if (GAME.combo >= 3) GAME.shakeTimer = Math.min(GAME.combo, 6);
 
         } else {
-          // 落下中に踏んだ → 基本点のみ、コンボリセット
           GAME.combo = 0;
           GAME.comboActive = false;
           points = 50;
@@ -855,18 +956,14 @@ function update(timestamp) {
 
         GAME.score += points;
 
-        // 新しい葉をリスポーン
         setTimeout(() => {
           if (leaves.filter(l => l.alive).length < GAME.leafCount) spawnLeaf();
         }, 300);
 
         updateUI();
-        break;  // 1フレームにつき1枚まで
+        break;
       }
     }
-
-    // ★ 落下開始でコンボ表示を維持（次に落下中に葉を踏んだらリセット）
-    // comboActive は落下着地でリセットではなく、落下中に葉を踏んだ時にリセット
 
     // Dead leaf cleanup
     leaves.forEach(leaf => {
@@ -878,25 +975,21 @@ function update(timestamp) {
     });
     leaves = leaves.filter(l => l.opacity > 0);
 
-    // Ensure minimum leaves
     while (leaves.filter(l => l.alive).length < GAME.leafCount) {
       spawnLeaf();
     }
 
-    // Water zone — コンボリセット（水面近くまで落ちた場合）
     if (P.y + P.h >= BASE_H - 40 && P.vy > 0) {
       GAME.combo = 0;
       GAME.comboActive = false;
       updateUI();
     }
 
-    // Game over
     if (P.y > BASE_H + 20) {
       gameOver();
     }
   }
 
-  // --- Draw ---
   drawLeaves();
   drawPlayer();
   drawParticles();
@@ -911,12 +1004,14 @@ function update(timestamp) {
 }
 
 // ===================================================
-//  Start / Retry
+//  Start / Retry（★ リトライ時はパスワード不要）
 // ===================================================
 btnStart.addEventListener('click', () => { initGame(); startCountdown(); });
 btnRetry.addEventListener('click', () => { initGame(); startCountdown(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' ') {
+    // パスワード入力中はゲーム開始しない
+    if (!authenticated) return;
     if (GAME.state === 'title' || GAME.state === 'gameover') {
       initGame();
       startCountdown();
