@@ -1,1 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>はっぱのなかまたち</title>
 
+  <!-- スマホ対応 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+  <style>
+    /* ===== 全体 ===== */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", sans-serif;
+      background: linear-gradient(#b6e388, #6dbb63);
+      overflow: hidden;
+    }
+
+    #game {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ===== タイトル ===== */
+    header {
+      padding: 12px;
+      font-size: 22px;
+      color: #2f5d2f;
+      text-shadow: 1px 1px 0 #ffffff;
+    }
+
+    /* ===== メイン表示 ===== */
+    #stage {
+      flex: 1;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .leaf-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.4), transparent 40%),
+        radial-gradient(circle at 80% 60%, rgba(255,255,255,0.3), transparent 40%);
+      pointer-events: none;
+    }
+
+    /* ===== キャラ ===== */
+    #character {
+      width: min(70vw, 260px);
+      image-rendering: pixelated;
+      transition: transform 0.2s ease;
+    }
+
+    #character:active {
+      transform: scale(0.95);
+    }
+
+    /* ===== ボタン ===== */
+    footer {
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      font-size: 16px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: none;
+      background: #ffffff;
+      color: #2f5d2f;
+      box-shadow: 0 3px 0 #7aa66a;
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #7aa66a;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="game">
+    <header>🌱 はっぱのなかまたち 🌱</header>
+
+    <div id="stage">
+      <div class="leaf-bg"></div>
+      <img id="character" src="img/char1.png" alt="はっぱキャラ">
+    </div>
+
+    <footer>
+      <button onclick="changeChar()">なかまをかえる</button>
+      <button onclick="pet()">なでる</button>
+    </footer>
+  </div>
+
+  <script>
+    const chars = [
+      "img/char1.png",
+      "img/char2.png",
+      "img/char3.png"
+    ];
+
+    let index = 0;
+    const img = document.getElementById("character");
+
+    function changeChar() {
+      index = (index + 1) % chars.length;
+      img.src = chars[index];
+    }
+
+    function pet() {
+      img.style.transform = "scale(1.1)";
+      setTimeout(() => {
+        img.style.transform = "scale(1)";
+      }, 150);
+    }
+  </script>
+</body>
+</html>
