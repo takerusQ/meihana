@@ -2,228 +2,929 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leaf Jump Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🍃 Leaf Jump!</title>
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-  margin: 0;
-  text-align: center;
-  font-family: sans-serif;
-  background: #87ceeb;
+  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'DotGothic16', sans-serif;
+  overflow: hidden;
 }
 
-h1 {
-  margin: 10px 0;
-}
-
-button {
-  font-size: 18px;
-  padding: 10px 20px;
-  margin: 10px;
+#gameWrapper {
+  position: relative;
+  border: 4px solid #16213e;
+  border-radius: 8px;
+  box-shadow:
+    0 0 20px rgba(46, 204, 113, 0.3),
+    0 0 60px rgba(46, 204, 113, 0.1),
+    inset 0 0 30px rgba(0,0,0,0.2);
 }
 
 canvas {
-  background: #bde0fe;
   display: block;
-  margin: 0 auto;
-  border: 3px solid #333;
   touch-action: none;
+  image-rendering: pixelated;
+}
+
+#uiOverlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#scoreBoard {
+  position: absolute;
+  top: 8px; left: 12px;
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+  line-height: 1.8;
+}
+
+#comboDisplay {
+  position: absolute;
+  top: 8px; right: 12px;
+  color: #ffeb3b;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  text-shadow: 2px 2px 0 #000;
+  text-align: right;
+  line-height: 1.8;
+  transition: transform 0.1s;
+}
+
+#levelBadge {
+  position: absolute;
+  top: 50px; right: 12px;
+  color: #80cbc4;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+#startScreen, #gameOverScreen {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 30, 0.85);
+  pointer-events: auto;
+  z-index: 20;
+}
+
+#startScreen h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 20px;
+  color: #2ecc71;
+  text-shadow: 3px 3px 0 #000;
+  margin-bottom: 8px;
+  animation: titleBounce 2s ease-in-out infinite;
+}
+
+#startScreen .subtitle {
+  font-size: 12px;
+  color: #81c784;
+  margin-bottom: 30px;
+  opacity: 0.8;
+}
+
+@keyframes titleBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.startBtn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  padding: 14px 28px;
+  background: #2ecc71;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #1b8a4a, 0 6px 15px rgba(46,204,113,0.4);
+  transition: all 0.1s;
+  pointer-events: auto;
+}
+
+.startBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #1b8a4a, 0 8px 20px rgba(46,204,113,0.5);
+}
+
+.startBtn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #1b8a4a;
+}
+
+#gameOverScreen h2 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  color: #e74c3c;
+  text-shadow: 3px 3px 0 #000;
+  margin-bottom: 15px;
+}
+
+#gameOverScreen .finalScore {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: #ffeb3b;
+  margin-bottom: 5px;
+}
+
+#gameOverScreen .finalCombo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #80cbc4;
+  margin-bottom: 25px;
+}
+
+.controls-hint {
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 20px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+#countdown {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 48px;
+  color: #fff;
+  text-shadow: 4px 4px 0 #000;
+  z-index: 25;
+  pointer-events: none;
+  animation: countPop 0.5s ease-out;
+}
+
+@keyframes countPop {
+  0% { transform: scale(2); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.scorePopup {
+  position: absolute;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: #ffeb3b;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  z-index: 15;
+  animation: popUp 0.8s ease-out forwards;
+}
+
+@keyframes popUp {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-40px) scale(1.3); }
 }
 </style>
 </head>
 
 <body>
 
-<h1>Leaf Jump Game</h1>
-<button onclick="startGame()">🎮 ゲームを遊ぶ</button>
-<canvas id="gameCanvas"></canvas>
+<div id="gameWrapper">
+  <canvas id="gameCanvas"></canvas>
+  <div id="uiOverlay">
+    <div id="scoreBoard">SCORE: 0</div>
+    <div id="comboDisplay"></div>
+    <div id="levelBadge"></div>
+  </div>
+
+  <div id="startScreen">
+    <h1>🍃 LEAF JUMP</h1>
+    <div class="subtitle">- リーフジャンプ -</div>
+    <button class="startBtn" id="btnStart">START</button>
+    <div class="controls-hint">
+      🎮 ← → キーで移動<br>
+      📱 タッチ&amp;スライドで操作<br>
+      <br>
+      ⬆ 上昇中に葉を踏むとCOMBO!
+    </div>
+  </div>
+
+  <div id="gameOverScreen" style="display:none;">
+    <h2>GAME OVER</h2>
+    <div class="finalScore" id="finalScore">0</div>
+    <div class="finalCombo" id="finalCombo"></div>
+    <button class="startBtn" id="btnRetry">RETRY</button>
+  </div>
+
+  <div id="countdown"></div>
+</div>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+// ===================================================
+//  🍃 LEAF JUMP — Professional Edition v2
+//  コンボ = 上昇中に葉を踏んだ場合のみ
+// ===================================================
 
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Responsive scaling ---
+const BASE_W = 400;
+const BASE_H = 600;
 let scale = 1;
-function resizeCanvas() {
-  const baseWidth = 400;
-  const baseHeight = 600;
 
-  scale = Math.min(
-    window.innerWidth / baseWidth,
-    window.innerHeight / baseHeight
-  );
-
-  canvas.width = baseWidth * scale;
-  canvas.height = baseHeight * scale;
-
+function resize() {
+  const maxW = window.innerWidth - 16;
+  const maxH = window.innerHeight - 16;
+  scale = Math.min(maxW / BASE_W, maxH / BASE_H, 1.5);
+  canvas.width = BASE_W * scale;
+  canvas.height = BASE_H * scale;
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.imageSmoothingEnabled = false;
 }
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+window.addEventListener('resize', resize);
+resize();
 
-let gameStarted = false;
-let gravity = 0.5;
-let score = 0;
+// --- DOM refs ---
+const scoreBoard = document.getElementById('scoreBoard');
+const comboDisplay = document.getElementById('comboDisplay');
+const levelBadge = document.getElementById('levelBadge');
+const startScreen = document.getElementById('startScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const countdownEl = document.getElementById('countdown');
+const btnStart = document.getElementById('btnStart');
+const btnRetry = document.getElementById('btnRetry');
 
-const player = {
-  x: 180,
-  y: 400,
-  width: 40,
-  height: 40,
-  dy: 0,
-  jumping: false
-};
-
-const leaves = [];
-const leafWidth = 80;
-const leafHeight = 20;
-
-function createLeaf(y) {
-  const x = Math.random() * (400 - leafWidth);
-  leaves.push({ x, y });
-}
-
-for (let i = 0; i < 6; i++) {
-  createLeaf(i * 120);
-}
-
-function startGame() {
-  gameStarted = true;
-  score = 0;
-  player.y = 400;
-  player.dy = 0;
-  leaves.length = 0;
-  for (let i = 0; i < 6; i++) {
-    createLeaf(i * 120);
-  }
-  requestAnimationFrame(update);
-}
-
-/* =========================
-   画像ロード（存在チェック付き）
-========================= */
-
-function loadImage(src) {
-  const img = new Image();
-  img.src = src;
-  return new Promise((resolve) => {
+// ===================================================
+//  Asset Loading (PNG with fallback)
+// ===================================================
+function loadImg(src) {
+  return new Promise(resolve => {
+    const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
+    img.src = src;
   });
 }
 
-let images = {};
-
+const IMG = {};
 async function loadAssets() {
-  images.idle = await loadImage("assets/char/idle.png");
-  images.leaf = await loadImage("assets/leaf/fresh.png");
-  images.bg = await loadImage("assets/bg/spring.png");
+  IMG.idle  = await loadImg('assets/char/idle.png');
+  IMG.jump  = await loadImg('assets/char/jump.png');
+  IMG.fall  = await loadImg('assets/char/fall.png');
+  IMG.combo = await loadImg('assets/char/combo.png');  // ★ 新規: コンボ専用スプライト
+  IMG.leaf     = await loadImg('assets/leaf/fresh.png');
+  IMG.leafDead = await loadImg('assets/leaf/dead.png');
+  IMG.bg       = await loadImg('assets/bg/spring.png');
 }
 loadAssets();
 
-/* =========================
-   描画
-========================= */
+// ===================================================
+//  Game State
+// ===================================================
+const GAME = {
+  state: 'title',
+  score: 0,
+  combo: 0,
+  maxCombo: 0,
+  leafSteps: 0,
+  leafCount: 12,
+  difficulty: 1,
+  shakeTimer: 0,
+  particles: [],
+  popups: [],
+  time: 0,
+  comboActive: false,  // ★ 現在コンボ状態か（上昇中に踏んだ直後～落下開始まで）
+};
 
-function drawPlayer() {
-  if (images.idle) {
-    ctx.drawImage(images.idle, player.x, player.y, player.width, player.height);
-  } else {
-    // フォールバック（ブロック描画）
-    ctx.fillStyle = "#2ecc71";
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+const PHYSICS = {
+  gravity: 0.32,
+  friction: 0.88,
+  leafJump: -10.5,
+  firstJump: -13,
+  moveAccel: 0.6,
+  maxVx: 5,
+};
 
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(player.x+8, player.y+10, 8, 8);
-    ctx.fillRect(player.x+24, player.y+10, 8, 8);
+// --- Player ---
+const P = {
+  x: BASE_W / 2 - 16,
+  y: BASE_H / 2,
+  w: 32, h: 32,
+  vx: 0, vy: 0,
+  auraAlpha: 0,
+  squash: 1,
+  stretch: 1,
+  trail: [],
+};
 
-    ctx.fillStyle = "#000";
-    ctx.fillRect(player.x+10, player.y+12, 4, 4);
-    ctx.fillRect(player.x+26, player.y+12, 4, 4);
+// --- Leaves ---
+let leaves = [];
 
-    ctx.fillStyle = "#ff69b4";
-    ctx.fillRect(player.x+16, player.y+25, 8, 4);
+function spawnLeaf(forceY) {
+  const margin = 44;
+  const lw = 48, lh = 16;
+  const x = margin + Math.random() * (BASE_W - margin * 2 - lw);
+  const y = forceY !== undefined ? forceY : 40 + Math.random() * (BASE_H - 140);
+  leaves.push({
+    x, y, w: lw, h: lh,
+    bobOffset: Math.random() * Math.PI * 2,
+    bobSpeed: 0.5 + Math.random() * 0.8,
+    bobAmp: 1.2 + Math.random() * 1.5,
+    sinkTimer: 0,
+    alive: true,
+    opacity: 1,
+    spawnAnim: 0,
+  });
+}
+
+function resetLeaves() {
+  leaves = [];
+  GAME.leafCount = 12;
+  for (let i = 0; i < GAME.leafCount; i++) spawnLeaf();
+}
+
+// ===================================================
+//  Particles
+// ===================================================
+function emitParticles(x, y, count, color, spread) {
+  for (let i = 0; i < count; i++) {
+    GAME.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * spread,
+      vy: -Math.random() * spread * 0.8 - 1,
+      life: 1,
+      decay: 0.02 + Math.random() * 0.03,
+      size: 2 + Math.random() * 3,
+      color,
+    });
   }
+}
+
+function updateParticles() {
+  for (let i = GAME.particles.length - 1; i >= 0; i--) {
+    const p = GAME.particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.08;
+    p.life -= p.decay;
+    if (p.life <= 0) GAME.particles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  GAME.particles.forEach(p => {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+  });
+  ctx.globalAlpha = 1;
+}
+
+// ===================================================
+//  Score Popups
+// ===================================================
+function showScorePopup(x, y, text, color) {
+  GAME.popups.push({ x, y, text, color, life: 1 });
+}
+
+function updatePopups() {
+  for (let i = GAME.popups.length - 1; i >= 0; i--) {
+    const p = GAME.popups[i];
+    p.y -= 1.2;
+    p.life -= 0.025;
+    if (p.life <= 0) GAME.popups.splice(i, 1);
+  }
+}
+
+function drawPopups() {
+  ctx.font = '10px "Press Start 2P", monospace';
+  GAME.popups.forEach(p => {
+    ctx.globalAlpha = Math.min(p.life * 2, 1);
+    ctx.fillStyle = '#000';
+    ctx.fillText(p.text, p.x + 1, p.y + 1);
+    ctx.fillStyle = p.color || '#ffeb3b';
+    ctx.fillText(p.text, p.x, p.y);
+  });
+  ctx.globalAlpha = 1;
+}
+
+// ===================================================
+//  Drawing
+// ===================================================
+
+function drawBg() {
+  if (IMG.bg) {
+    ctx.drawImage(IMG.bg, 0, 0, BASE_W, BASE_H);
+    return;
+  }
+  const grad = ctx.createLinearGradient(0, 0, 0, BASE_H);
+  grad.addColorStop(0, '#87ceeb');
+  grad.addColorStop(0.6, '#b8e6ff');
+  grad.addColorStop(0.85, '#d4f0ff');
+  grad.addColorStop(1, '#4a90a4');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  const t = GAME.time * 0.0003;
+  for (let i = 0; i < 5; i++) {
+    const cx = ((i * 97 + t * (60 + i * 15)) % (BASE_W + 80)) - 40;
+    const cy = 30 + i * 50 + Math.sin(i * 1.5) * 20;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18 + i * 4, 0, Math.PI * 2);
+    ctx.arc(cx + 20, cy - 5, 14 + i * 3, 0, Math.PI * 2);
+    ctx.arc(cx + 10, cy + 5, 12 + i * 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#3498db';
+  ctx.fillRect(0, BASE_H - 40, BASE_W, 40);
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  for (let i = 0; i < 8; i++) {
+    const wx = (i * 55 + Math.sin(GAME.time * 0.002 + i) * 10) % BASE_W;
+    ctx.fillRect(wx, BASE_H - 35 + Math.sin(GAME.time * 0.003 + i * 0.7) * 3, 30, 2);
+  }
+}
+
+function drawLeafFallback(x, y, w, h, alive, opacity) {
+  ctx.globalAlpha = opacity;
+  ctx.fillStyle = alive ? '#27ae60' : '#8B6914';
+  ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+  ctx.fillStyle = alive ? '#2ecc71' : '#a07828';
+  ctx.fillRect(x + 4, y + h/2 - 1, w - 8, 2);
+  ctx.fillStyle = alive ? '#55efc4' : '#c4a040';
+  ctx.fillRect(x + 4, y + 2, w - 8, 2);
+  ctx.globalAlpha = 1;
+}
+
+// ★ コンボ状態用フォールバックドット絵（虹色オーラ＋キラキラ目）
+function drawPlayerComboFallback(x, y, w, h) {
+  // 虹色に明滅するボディ
+  const hue = (GAME.time * 0.3) % 360;
+  ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
+  ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+  // キラキラ目
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x + 6, y + 8, 7, 7);
+  ctx.fillRect(x + w - 13, y + 8, 7, 7);
+  // 星型瞳（十字で表現）
+  ctx.fillStyle = '#ffe000';
+  ctx.fillRect(x + 8, y + 10, 3, 3);
+  ctx.fillRect(x + 7, y + 11, 5, 1);
+  ctx.fillRect(x + 9, y + 9, 1, 5);
+  ctx.fillRect(x + w - 12, y + 10, 3, 3);
+  ctx.fillRect(x + w - 13, y + 11, 5, 1);
+  ctx.fillRect(x + w - 11, y + 9, 1, 5);
+  // 大きく開いた口
+  ctx.fillStyle = '#ff3366';
+  ctx.fillRect(x + w/2 - 4, y + h - 12, 8, 6);
+  // 頬紅（強め）
+  ctx.fillStyle = 'rgba(255,100,150,0.7)';
+  ctx.fillRect(x + 2, y + 16, 5, 3);
+  ctx.fillRect(x + w - 7, y + 16, 5, 3);
+}
+
+function drawPlayerNormalFallback(x, y, w, h) {
+  ctx.fillStyle = '#2ecc71';
+  ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x + 6, y + 8, 7, 7);
+  ctx.fillRect(x + w - 13, y + 8, 7, 7);
+  const pupilOff = Math.sign(P.vx) * 2;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(x + 8 + pupilOff, y + 10, 3, 3);
+  ctx.fillRect(x + w - 11 + pupilOff, y + 10, 3, 3);
+  ctx.fillStyle = P.vy < -2 ? '#ff6b6b' : '#ff69b4';
+  const mw = P.vy < -2 ? 6 : 8;
+  const mh = P.vy < -2 ? 6 : 3;
+  ctx.fillRect(x + w/2 - mw/2, y + h - 10, mw, mh);
+  ctx.fillStyle = 'rgba(255,150,150,0.5)';
+  ctx.fillRect(x + 3, y + 16, 4, 3);
+  ctx.fillRect(x + w - 7, y + 16, 4, 3);
 }
 
 function drawLeaves() {
   leaves.forEach(leaf => {
-    if (images.leaf) {
-      ctx.drawImage(images.leaf, leaf.x, leaf.y, leafWidth, leafHeight);
+    const bob = Math.sin(GAME.time * 0.003 * leaf.bobSpeed + leaf.bobOffset) * leaf.bobAmp;
+    const dy = leaf.y + bob + leaf.sinkTimer * 2;
+    const sc = Math.min(leaf.spawnAnim * 1.5, 1);
+
+    ctx.save();
+    ctx.translate(leaf.x + leaf.w/2, dy + leaf.h/2);
+    ctx.scale(sc, sc);
+    ctx.translate(-leaf.w/2, -leaf.h/2);
+
+    if (leaf.alive && IMG.leaf) {
+      ctx.globalAlpha = leaf.opacity;
+      ctx.drawImage(IMG.leaf, 0, 0, leaf.w, leaf.h);
+      ctx.globalAlpha = 1;
+    } else if (!leaf.alive && IMG.leafDead) {
+      ctx.globalAlpha = leaf.opacity;
+      ctx.drawImage(IMG.leafDead, 0, 0, leaf.w, leaf.h);
+      ctx.globalAlpha = 1;
     } else {
-      ctx.fillStyle = "#27ae60";
-      ctx.fillRect(leaf.x, leaf.y, leafWidth, leafHeight);
+      drawLeafFallback(0, 0, leaf.w, leaf.h, leaf.alive, leaf.opacity);
     }
+    ctx.restore();
+
+    leaf._renderY = dy;
   });
 }
 
-function drawBackground() {
-  if (images.bg) {
-    ctx.drawImage(images.bg, 0, 0, 400, 600);
+function drawPlayer() {
+  const isCombo = GAME.comboActive && GAME.combo >= 1;
+
+  // ★ Trail — コンボ中は虹色
+  P.trail.forEach((t, i) => {
+    const a = i / P.trail.length * 0.3;
+    ctx.globalAlpha = a;
+    if (isCombo) {
+      const hue = (GAME.time * 0.5 + i * 40) % 360;
+      ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
+    } else {
+      ctx.fillStyle = '#2ecc71';
+    }
+    ctx.fillRect(t.x + 4, t.y + 4, P.w - 8, P.h - 8);
+  });
+  ctx.globalAlpha = 1;
+
+  // ★ Aura — コンボ中のみ表示、コンボ数で色変化
+  if (isCombo) {
+    P.auraAlpha = Math.min(P.auraAlpha + 0.06, 0.45);
+    const auraHue = GAME.combo >= 5 ? (GAME.time * 0.5) % 360 : // 5+: 虹色回転
+                    GAME.combo >= 3 ? 30 :  // 3-4: オレンジ
+                    200;                     // 1-2: シアン
+    const auraColor = GAME.combo >= 5
+      ? `hsla(${auraHue}, 100%, 60%, ${P.auraAlpha})`
+      : `hsla(${auraHue}, 80%, 55%, ${P.auraAlpha})`;
+    ctx.beginPath();
+    ctx.arc(P.x + P.w/2, P.y + P.h/2, P.w * (0.9 + GAME.combo * 0.05), 0, Math.PI * 2);
+    ctx.fillStyle = auraColor;
+    ctx.fill();
+  } else {
+    P.auraAlpha = Math.max(P.auraAlpha - 0.05, 0);
   }
+
+  // Squash & stretch
+  ctx.save();
+  ctx.translate(P.x + P.w/2, P.y + P.h);
+  ctx.scale(P.squash, P.stretch);
+  ctx.translate(-P.w/2, -P.h);
+
+  // ★ スプライト選択: コンボ中 → combo.png 優先
+  let img = null;
+  if (isCombo && P.vy < 0) {
+    img = IMG.combo || IMG.jump;  // combo.pngがなければjump.pngにフォールバック
+  } else if (P.vy < -1) {
+    img = IMG.jump || IMG.idle;
+  } else if (P.vy > 2) {
+    img = IMG.fall || IMG.idle;
+  } else {
+    img = IMG.idle;
+  }
+
+  if (img) {
+    ctx.drawImage(img, 0, 0, P.w, P.h);
+  } else if (isCombo) {
+    drawPlayerComboFallback(0, 0, P.w, P.h);
+  } else {
+    drawPlayerNormalFallback(0, 0, P.w, P.h);
+  }
+  ctx.restore();
 }
 
-/* =========================
-   更新
-========================= */
+// ===================================================
+//  Input
+// ===================================================
+const input = { left: false, right: false, touchActive: false, touchX: 0 };
 
-function update() {
-  if (!gameStarted) return;
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') input.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd') input.right = true;
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') input.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') input.right = false;
+});
 
-  ctx.clearRect(0, 0, 400, 600);
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  input.touchActive = true;
+  input.touchX = (e.touches[0].clientX - canvas.getBoundingClientRect().left) / scale;
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (input.touchActive) {
+    input.touchX = (e.touches[0].clientX - canvas.getBoundingClientRect().left) / scale;
+  }
+});
+canvas.addEventListener('touchend', () => { input.touchActive = false; });
 
-  drawBackground();
+// ===================================================
+//  Game Logic
+// ===================================================
 
-  player.dy += gravity;
-  player.y += player.dy;
+function initGame() {
+  P.x = BASE_W / 2 - P.w / 2;
+  P.y = BASE_H / 2;
+  P.vx = 0;
+  P.vy = 0;
+  P.squash = 1;
+  P.stretch = 1;
+  P.trail = [];
+  P.auraAlpha = 0;
+  GAME.score = 0;
+  GAME.combo = 0;
+  GAME.maxCombo = 0;
+  GAME.leafSteps = 0;
+  GAME.difficulty = 1;
+  GAME.shakeTimer = 0;
+  GAME.particles = [];
+  GAME.popups = [];
+  GAME.comboActive = false;
+  resetLeaves();
+  updateUI();
+}
 
-  if (player.y > 500) {
-    alert("Game Over! Score: " + score);
-    gameStarted = false;
-    return;
+function startCountdown() {
+  GAME.state = 'countdown';
+  startScreen.style.display = 'none';
+  gameOverScreen.style.display = 'none';
+  let count = 3;
+  countdownEl.style.display = 'flex';
+  countdownEl.textContent = count;
+  countdownEl.style.animation = 'none';
+  void countdownEl.offsetWidth;
+  countdownEl.style.animation = 'countPop 0.5s ease-out';
+
+  const interval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      countdownEl.textContent = count;
+      countdownEl.style.animation = 'none';
+      void countdownEl.offsetWidth;
+      countdownEl.style.animation = 'countPop 0.5s ease-out';
+    } else if (count === 0) {
+      countdownEl.textContent = 'GO!';
+      countdownEl.style.color = '#2ecc71';
+      countdownEl.style.animation = 'none';
+      void countdownEl.offsetWidth;
+      countdownEl.style.animation = 'countPop 0.5s ease-out';
+    } else {
+      countdownEl.style.display = 'none';
+      countdownEl.style.color = '#fff';
+      GAME.state = 'playing';
+      P.vy = PHYSICS.firstJump;
+      P.stretch = 1.3;
+      P.squash = 0.7;
+      emitParticles(P.x + P.w/2, P.y + P.h, 10, '#2ecc71', 4);
+      clearInterval(interval);
+    }
+  }, 800);
+}
+
+function gameOver() {
+  GAME.state = 'gameover';
+  GAME.shakeTimer = 15;
+  emitParticles(P.x + P.w/2, P.y + P.h/2, 20, '#e74c3c', 6);
+
+  setTimeout(() => {
+    gameOverScreen.style.display = 'flex';
+    document.getElementById('finalScore').textContent = `SCORE: ${GAME.score}`;
+    document.getElementById('finalCombo').textContent = `MAX COMBO: ${GAME.maxCombo}x`;
+  }, 500);
+}
+
+function updateUI() {
+  scoreBoard.textContent = `SCORE: ${GAME.score}`;
+  if (GAME.combo >= 1 && GAME.comboActive) {
+    comboDisplay.textContent = `${GAME.combo}x COMBO!`;
+    comboDisplay.style.transform = 'scale(1.15)';
+    setTimeout(() => comboDisplay.style.transform = 'scale(1)', 100);
+    comboDisplay.style.color =
+      GAME.combo >= 5 ? '#ff5252' :
+      GAME.combo >= 3 ? '#ff9800' : '#ffeb3b';
+  } else {
+    comboDisplay.textContent = '';
+  }
+  levelBadge.textContent = `LV.${GAME.difficulty}`;
+}
+
+// ===================================================
+//  Main Update Loop
+// ===================================================
+
+let lastTime = 0;
+
+function update(timestamp) {
+  requestAnimationFrame(update);
+  lastTime = timestamp;
+  GAME.time = timestamp;
+
+  let shakeX = 0, shakeY = 0;
+  if (GAME.shakeTimer > 0) {
+    GAME.shakeTimer--;
+    shakeX = (Math.random() - 0.5) * GAME.shakeTimer * 0.8;
+    shakeY = (Math.random() - 0.5) * GAME.shakeTimer * 0.8;
   }
 
-  leaves.forEach(leaf => {
-    if (
-      player.x < leaf.x + leafWidth &&
-      player.x + player.width > leaf.x &&
-      player.y + player.height < leaf.y + leafHeight &&
-      player.y + player.height > leaf.y &&
-      player.dy > 0
-    ) {
-      player.dy = -10;
-      score++;
-    }
-  });
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+  ctx.clearRect(-10, -10, BASE_W + 20, BASE_H + 20);
+  drawBg();
 
+  if (GAME.state === 'playing') {
+
+    // Movement
+    if (input.left) P.vx -= PHYSICS.moveAccel;
+    if (input.right) P.vx += PHYSICS.moveAccel;
+    if (input.touchActive) {
+      const diff = (input.touchX - (P.x + P.w/2)) / 40;
+      P.vx += Math.max(-PHYSICS.moveAccel, Math.min(PHYSICS.moveAccel, diff));
+    }
+
+    // Physics
+    P.vx *= PHYSICS.friction;
+    P.vx = Math.max(-PHYSICS.maxVx, Math.min(PHYSICS.maxVx, P.vx));
+    P.vy += PHYSICS.gravity;
+    P.x += P.vx;
+    P.y += P.vy;
+
+    // Wall wrap
+    if (P.x + P.w < 0) P.x = BASE_W;
+    if (P.x > BASE_W) P.x = -P.w;
+
+    // Squash & stretch lerp
+    P.squash += (1 - P.squash) * 0.15;
+    P.stretch += (1 - P.stretch) * 0.15;
+
+    // Trail
+    P.trail.push({ x: P.x, y: P.y });
+    if (P.trail.length > 6) P.trail.shift();
+
+    // ★★★ 核心: 葉っぱ衝突判定（上昇中・落下中ともに反応） ★★★
+    for (let i = leaves.length - 1; i >= 0; i--) {
+      const leaf = leaves[i];
+      if (!leaf.alive) continue;
+
+      const bob = Math.sin(GAME.time * 0.003 * leaf.bobSpeed + leaf.bobOffset) * leaf.bobAmp;
+      const ly = leaf.y + bob;
+
+      // 判定: 上からでも下からでも、キャラの足元 or 頭が葉に重なっていればOK
+      // ただしコンボ判定は上昇中のみ
+      const playerBottom = P.y + P.h;
+      const playerTop = P.y;
+      const leafTop = ly;
+      const leafBottom = ly + leaf.h;
+
+      // 水平方向の重なり
+      const hOverlap = P.x + P.w > leaf.x + 4 && P.x < leaf.x + leaf.w - 4;
+
+      // 垂直方向: 足元が葉に触れている（落下中）または頭～体が葉に触れている（上昇中）
+      let hit = false;
+      if (hOverlap) {
+        if (P.vy >= 0) {
+          // 落下中: 足元が葉の範囲内
+          hit = playerBottom >= leafTop && playerBottom <= leafBottom + 10;
+        } else {
+          // ★ 上昇中: 体の上半分～足元が葉に重なっていればOK
+          hit = playerBottom >= leafTop && playerTop <= leafBottom + 4;
+        }
+      }
+
+      if (hit) {
+        const wasRising = P.vy < 0;  // ★ 踏んだ瞬間の状態を記録
+
+        // ジャンプ発動
+        P.vy = PHYSICS.leafJump;
+        P.squash = 1.4;
+        P.stretch = 0.6;
+
+        // 葉を消す
+        leaf.alive = false;
+        leaf.sinkTimer = 0;
+        GAME.leafSteps++;
+
+        // 難易度上昇
+        if (GAME.leafSteps % 30 === 0 && GAME.leafCount > 5) {
+          GAME.leafCount--;
+          GAME.difficulty++;
+        }
+
+        // ★★★ コンボ判定: 上昇中に踏んだ場合のみ ★★★
+        let points;
+        if (wasRising) {
+          // 上昇中に踏んだ → コンボ加算！
+          GAME.combo++;
+          GAME.comboActive = true;
+          if (GAME.combo > GAME.maxCombo) GAME.maxCombo = GAME.combo;
+          points = 100 * GAME.combo;  // コンボ時は高得点
+
+          const pcolor = GAME.combo >= 5 ? '#ff5252' :
+                         GAME.combo >= 3 ? '#ff9800' : '#00e5ff';
+          emitParticles(leaf.x + leaf.w/2, ly, 12 + GAME.combo * 2, pcolor, 4 + GAME.combo * 0.5);
+          showScorePopup(P.x, P.y - 15, `+${points} ★${GAME.combo}`, pcolor);
+
+          // コンボ中の画面揺れ（小さめ）
+          if (GAME.combo >= 3) GAME.shakeTimer = Math.min(GAME.combo, 6);
+
+        } else {
+          // 落下中に踏んだ → 基本点のみ、コンボリセット
+          GAME.combo = 0;
+          GAME.comboActive = false;
+          points = 50;
+
+          emitParticles(leaf.x + leaf.w/2, ly, 6, '#2ecc71', 3);
+          showScorePopup(P.x, P.y - 10, `+${points}`, '#2ecc71');
+        }
+
+        GAME.score += points;
+
+        // 新しい葉をリスポーン
+        setTimeout(() => {
+          if (leaves.filter(l => l.alive).length < GAME.leafCount) spawnLeaf();
+        }, 300);
+
+        updateUI();
+        break;  // 1フレームにつき1枚まで
+      }
+    }
+
+    // ★ 落下開始でコンボ表示を維持（次に落下中に葉を踏んだらリセット）
+    // comboActive は落下着地でリセットではなく、落下中に葉を踏んだ時にリセット
+
+    // Dead leaf cleanup
+    leaves.forEach(leaf => {
+      if (!leaf.alive) {
+        leaf.sinkTimer += 0.1;
+        leaf.opacity -= 0.03;
+      }
+      if (leaf.spawnAnim < 1) leaf.spawnAnim += 0.05;
+    });
+    leaves = leaves.filter(l => l.opacity > 0);
+
+    // Ensure minimum leaves
+    while (leaves.filter(l => l.alive).length < GAME.leafCount) {
+      spawnLeaf();
+    }
+
+    // Water zone — コンボリセット（水面近くまで落ちた場合）
+    if (P.y + P.h >= BASE_H - 40 && P.vy > 0) {
+      GAME.combo = 0;
+      GAME.comboActive = false;
+      updateUI();
+    }
+
+    // Game over
+    if (P.y > BASE_H + 20) {
+      gameOver();
+    }
+  }
+
+  // --- Draw ---
   drawLeaves();
   drawPlayer();
+  drawParticles();
+  updateParticles();
+  drawPopups();
+  updatePopups();
 
-  ctx.fillStyle = "#000";
-  ctx.font = "20px sans-serif";
-  ctx.fillText("Score: " + score, 10, 30);
+  ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
+  ctx.fillRect(0, BASE_H - 42, BASE_W, 4);
 
-  requestAnimationFrame(update);
+  ctx.restore();
 }
 
-/* =========================
-   操作（PC + スマホ）
-========================= */
-
-document.addEventListener("keydown", e => {
-  if (e.key === "ArrowLeft") player.x -= 20;
-  if (e.key === "ArrowRight") player.x += 20;
-});
-
-canvas.addEventListener("touchstart", e => {
-  const touchX = e.touches[0].clientX;
-  if (touchX < window.innerWidth / 2) {
-    player.x -= 20;
-  } else {
-    player.x += 20;
+// ===================================================
+//  Start / Retry
+// ===================================================
+btnStart.addEventListener('click', () => { initGame(); startCountdown(); });
+btnRetry.addEventListener('click', () => { initGame(); startCountdown(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    if (GAME.state === 'title' || GAME.state === 'gameover') {
+      initGame();
+      startCountdown();
+    }
   }
 });
-</script>
 
+requestAnimationFrame(update);
+</script>
 </body>
 </html>
